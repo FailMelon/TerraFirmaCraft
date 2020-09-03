@@ -35,7 +35,10 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 import net.dries007.tfc.ConfigTFC;
 import net.dries007.tfc.api.types.Tree;
+import net.dries007.tfc.client.particle.TFCParticles;
 import net.dries007.tfc.util.OreDictionaryHelper;
+
+import static net.dries007.tfc.Constants.RNG;
 
 @ParametersAreNonnullByDefault
 public class BlockLeavesTFC extends BlockLeaves
@@ -87,7 +90,7 @@ public class BlockLeavesTFC extends BlockLeaves
     @SuppressWarnings("deprecation")
     public void neighborChanged(IBlockState state, World world, BlockPos pos, @Nullable Block blockIn, @Nullable BlockPos fromPos)
     {
-        doLeafDecay(world, pos, state);
+        world.scheduleUpdate(pos, this, 0);
     }
 
     @Override
@@ -248,5 +251,23 @@ public class BlockLeavesTFC extends BlockLeaves
         }
 
         world.setBlockToAir(pos);
+        int particleScale = 10;
+        double x = pos.getX();
+        double y = pos.getY();
+        double z = pos.getZ();
+        for(int i = 1; i < RNG.nextInt(4); i++)
+        {
+            switch (RNG.nextInt(4)) {
+                case 1:
+                    TFCParticles.LEAF1.sendToAllNear(world, x + RNG.nextFloat() / particleScale, y - RNG.nextFloat() / particleScale, z + RNG.nextFloat() / particleScale, (RNG.nextFloat() - 0.5) / particleScale, -0.15D + RNG.nextFloat() / particleScale, (RNG.nextFloat() - 0.5) / particleScale, 90);
+                    break;
+                case 2:
+                    TFCParticles.LEAF2.sendToAllNear(world, x + RNG.nextFloat() / particleScale, y - RNG.nextFloat() / particleScale, z + RNG.nextFloat() / particleScale, (RNG.nextFloat() - 0.5) / particleScale, -0.15D + RNG.nextFloat() / particleScale, (RNG.nextFloat() - 0.5) / particleScale, 70);
+                    break;
+                case 3:
+                    TFCParticles.LEAF3.sendToAllNear(world, x + RNG.nextFloat() / particleScale, y - RNG.nextFloat() / particleScale, z + RNG.nextFloat() / particleScale, (RNG.nextFloat() - 0.5) / particleScale, -0.15D + RNG.nextFloat() / particleScale, (RNG.nextFloat() - 0.5) / particleScale, 80);
+                    break;
+            }
+        }
     }
 }

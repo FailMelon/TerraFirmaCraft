@@ -219,6 +219,7 @@ METAL_ITEMS = {
     'sheet': False,
     'double_sheet': False,
     'anvil': True,
+    'trapdoor': False,
     'tuyere': True,
     'lamp': False,
     'pick': True,
@@ -284,6 +285,7 @@ FLUIDS = {
     'milk': 'milk',
     'olive_oil': 'olive_oil',
     'tannin': 'tannin',
+    'lye': 'lye',
     'limewater': 'limewater',
     'milk_curdled': 'milk_curdled',
     'milk_vinegar': 'milk_vinegar',
@@ -410,9 +412,8 @@ FOODS = [
     'venison',
     'rabbit',
     'wolf',
-    'viande',
-    'chevon',
-    'duck',
+    'camelidae',
+    'mongoose',
     'gran_feline',
     'cooked_beef',
     'cooked_pork',
@@ -426,9 +427,8 @@ FOODS = [
     'cooked_wolf',
     'cooked_venison',
     'cooked_rabbit',
-    'cooked_viande',
-    'cooked_chevon',
-    'cooked_duck',
+    'cooked_camelidae',
+    'cooked_mongoose',
     'cooked_gran_feline',
     'barley_bread_sandwich',
     'cornbread_sandwich',
@@ -484,25 +484,7 @@ DOOR_VARIANTS = {
     'facing=west,half=upper,hinge=right,open=true': {'model': 'tfc:door_top_tfc', 'y': 90},
     'facing=north,half=upper,hinge=right,open=true': {'model': 'tfc:door_top_tfc', 'y': 180}
 }
-TRAPDOOR_VARIANTS = {
-    'normal': None,
-    'facing=north,half=bottom,open=false': {'model': 'tfc:trapdoor_tfc', 'x': 180},
-    'facing=south,half=bottom,open=false': {'model': 'tfc:trapdoor_tfc', 'x': 180},
-    'facing=east,half=bottom,open=false': {'model': 'tfc:trapdoor_tfc', 'x': 180},
-    'facing=west,half=bottom,open=false': {'model': 'tfc:trapdoor_tfc', 'x': 180},
-    'facing=north,half=top,open=false': {'model': 'tfc:trapdoor_tfc'},
-    'facing=south,half=top,open=false': {'model': 'tfc:trapdoor_tfc'},
-    'facing=east,half=top,open=false': {'model': 'tfc:trapdoor_tfc'},
-    'facing=west,half=top,open=false': {'model': 'tfc:trapdoor_tfc'},
-    'facing=north,half=bottom,open=true': {'model': 'tfc:trapdoor_tfc', 'x': 270},
-    'facing=south,half=bottom,open=true': {'model': 'tfc:trapdoor_tfc', 'x': 90},
-    'facing=east,half=bottom,open=true': {'model': 'tfc:trapdoor_tfc', 'x': 270, 'y': 90},
-    'facing=west,half=bottom,open=true': {'model': 'tfc:trapdoor_tfc', 'x': 270, 'y': 270},
-    'facing=north,half=top,open=true': {'model': 'tfc:trapdoor_tfc', 'x': 270},
-    'facing=south,half=top,open=true': {'model': 'tfc:trapdoor_tfc', 'x': 90},
-    'facing=east,half=top,open=true': {'model': 'tfc:trapdoor_tfc', 'x': 270, 'y': 90},
-    'facing=west,half=top,open=true': {'model': 'tfc:trapdoor_tfc', 'x': 270, 'y': 270}
-}
+
 STAIR_VARIANTS = {
     'normal': {'model': 'stairs'},
     'facing=east,half=bottom,shape=straight': {'model': 'stairs'},
@@ -717,7 +699,6 @@ for key in METAL_TYPES:
         },
         'facing': {'up': {}, 'down': {'model': "tfc:lamp/down"}}
     })
-
 
 # METAL SHEETS
 for key in METAL_TYPES:
@@ -958,11 +939,6 @@ for wood_type in WOOD_TYPES:
     })
     cube_all(('double_slab', 'wood', wood_type), 'tfc:blocks/wood/planks/%s' % wood_type)
 
-    # (WOOD) TRAPDOORS
-    blockstate(('wood', 'trapdoor', wood_type), None, textures={
-        'texture': 'tfc:blocks/wood/trapdoor/%s' % wood_type
-    }, variants=TRAPDOOR_VARIANTS)
-
     # FenceGates
     blockstate(('wood', 'fence_gate', wood_type), None, textures={
         'texture': 'tfc:blocks/wood/planks/%s' % wood_type
@@ -996,6 +972,19 @@ for wood_type in WOOD_TYPES:
         },
         'inventory': [{
             'model': 'button_inventory'
+        }]
+    })
+
+    # (WOOD) PRESSURE PLATE
+    blockstate(('wood', 'pressure_plate', wood_type), 'pressure_plate', textures={
+        ('texture', 'particle'): 'tfc:blocks/wood/planks/%s' % wood_type,
+    }, variants={
+        'powered': {
+            'false': {'model': 'stone_pressure_plate_up'},
+            'true': {'model': 'stone_pressure_plate_down'}
+        },
+        'inventory': [{
+            'model': 'stone_pressure_plate_up'
         }]
     })
 
@@ -1126,6 +1115,9 @@ for item_type, tool_item in METAL_ITEMS.items():
         if item_type == 'anvil':
             model(('item', 'metal', 'anvil', metal), 'tfc:item/metal/anvil/transformations',
                   {'all': 'tfc:blocks/metal/%s' % metal})
+        elif item_type == 'trapdoor':
+            model(('item', 'metal', 'trapdoor', metal), 'block/trapdoor_bottom',
+                  {'texture': 'tfc:blocks/trapdoor/%s' % metal})
         else:
             parent = 'item/handheld' if item_type in TOOLS else 'item/generated'
             if item_type in ['knife', 'javelin']:

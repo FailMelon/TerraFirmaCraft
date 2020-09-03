@@ -32,6 +32,7 @@ public class RenderAbstractHorseTFC extends RenderLiving<AbstractHorse>
 
     static
     {
+        // Those are grabbed from vanilla, please don't change unless we add our own textures first.
         MAP.put(EntityDonkeyTFC.class, new ResourceLocation("textures/entity/horse/donkey.png"));
         MAP.put(EntityMuleTFC.class, new ResourceLocation("textures/entity/horse/mule.png"));
     }

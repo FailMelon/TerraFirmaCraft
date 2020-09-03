@@ -7,8 +7,11 @@ package net.dries007.tfc;
 
 import java.util.Arrays;
 
+import net.dries007.tfc.objects.items.ItemsTFC;
+import net.dries007.tfc.util.OreDictionaryHelper;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockLeaves;
+import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
@@ -56,6 +59,7 @@ import net.minecraftforge.event.entity.player.PlayerEvent.BreakSpeed;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fluids.Fluid;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.Event;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -84,6 +88,7 @@ import net.dries007.tfc.api.capability.size.Weight;
 import net.dries007.tfc.api.capability.worldtracker.CapabilityWorldTracker;
 import net.dries007.tfc.api.capability.worldtracker.WorldTracker;
 import net.dries007.tfc.api.types.*;
+import net.dries007.tfc.compat.patchouli.TFCPatchouliPlugin;
 import net.dries007.tfc.network.PacketCalendarUpdate;
 import net.dries007.tfc.network.PacketPlayerDataUpdate;
 import net.dries007.tfc.objects.blocks.BlockFluidTFC;
@@ -147,6 +152,10 @@ public final class CommonEventHandler
     public static void breakEvent(BlockEvent.BreakEvent event)
     {
         final EntityPlayer player = event.getPlayer();
+        final ItemStack heldItem = player == null ? ItemStack.EMPTY : player.getHeldItemMainhand();
+        final IBlockState state = event.getState();
+        final Block block = state.getBlock();
+
         if (player != null)
         {
             IPlayerData cap = player.getCapability(CapabilityPlayerData.CAPABILITY, null);
@@ -178,6 +187,17 @@ public final class CommonEventHandler
             {
                 event.getDrops().add(new ItemStack(Items.STICK));
             }
+        }
+        // Harvest ice from saws
+        if (OreDictionaryHelper.doesStackMatchOre(heldItem,"saw") && block == Blocks.ICE)
+        {
+            event.getDrops().add(new ItemStack(Blocks.ICE));
+        }
+
+        // Drop shards from glass
+        if (state.getMaterial() == Material.GLASS && Constants.RNG.nextInt(2) == 0)
+        {
+            event.getDrops().add(new ItemStack(ItemsTFC.GLASS_SHARD));
         }
 
         // Apply durability modifier on tools
@@ -290,17 +310,20 @@ public final class CommonEventHandler
         BlockPos pos = event.getPos();
         IBlockState state = world.getBlockState(pos);
 
-        if (state.getBlock() instanceof BlockRockVariant)
+        if (ConfigTFC.General.OVERRIDES.enableHoeing)
         {
-            BlockRockVariant blockRock = (BlockRockVariant) state.getBlock();
-            if (blockRock.getType() == Rock.Type.GRASS || blockRock.getType() == Rock.Type.DIRT)
+            if (state.getBlock() instanceof BlockRockVariant)
             {
-                if (!world.isRemote)
+                BlockRockVariant blockRock = (BlockRockVariant) state.getBlock();
+                if (blockRock.getType() == Rock.Type.GRASS || blockRock.getType() == Rock.Type.DIRT)
                 {
-                    world.playSound(null, pos, SoundEvents.ITEM_HOE_TILL, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                    world.setBlockState(pos, BlockRockVariant.get(blockRock.getRock(), Rock.Type.FARMLAND).getDefaultState());
+                    if (!world.isRemote)
+                    {
+                        world.playSound(null, pos, SoundEvents.ITEM_HOE_TILL, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                        world.setBlockState(pos, BlockRockVariant.get(blockRock.getRock(), Rock.Type.FARMLAND).getDefaultState());
+                    }
+                    event.setResult(Event.Result.ALLOW);
                 }
-                event.setResult(Event.Result.ALLOW);
             }
         }
     }
@@ -487,11 +510,19 @@ public final class CommonEventHandler
                 }
             }
 
-            // Skills / Player Data
-            IPlayerData skills = player.getCapability(CapabilityPlayerData.CAPABILITY, null);
-            if (skills != null)
+            // layer Data
+            IPlayerData playerData = player.getCapability(CapabilityPlayerData.CAPABILITY, null);
+            if (playerData != null)
             {
-                TerraFirmaCraft.getNetwork().sendTo(new PacketPlayerDataUpdate(skills.serializeNBT()), player);
+                // Give book if possible
+                if (Loader.isModLoaded("patchouli") && !playerData.hasBook() && ConfigTFC.General.MISC.giveBook)
+                {
+                    TFCPatchouliPlugin.giveBookToPlayer(player);
+                    playerData.setHasBook(true);
+                }
+
+                // Sync
+                TerraFirmaCraft.getNetwork().sendTo(new PacketPlayerDataUpdate(playerData.serializeNBT()), player);
             }
         }
     }
@@ -529,10 +560,17 @@ public final class CommonEventHandler
             FoodStatsTFC.replaceFoodStats(player);
 
             // Skills / Player data
-            IPlayerData skills = player.getCapability(CapabilityPlayerData.CAPABILITY, null);
-            if (skills != null)
+            IPlayerData cap = player.getCapability(CapabilityPlayerData.CAPABILITY, null);
+            if (cap != null)
             {
-                TerraFirmaCraft.getNetwork().sendTo(new PacketPlayerDataUpdate(skills.serializeNBT()), player);
+                // Give book if possible
+                if (Loader.isModLoaded("patchouli") && !(event.isEndConquered() || player.world.getGameRules().getBoolean("keepInventory")) && ConfigTFC.General.MISC.giveBook)
+                {
+                    TFCPatchouliPlugin.giveBookToPlayer(player);
+                    cap.setHasBook(true);
+                }
+
+                TerraFirmaCraft.getNetwork().sendTo(new PacketPlayerDataUpdate(cap.serializeNBT()), player);
             }
         }
     }
